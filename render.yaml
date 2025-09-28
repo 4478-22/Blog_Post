@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: drf-social-backend
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python manage.py migrate && gunicorn config.wsgi:application --log-file -"
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "drf-social-backend.onrender.com"
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        value: "https://your-frontend.example.com"
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: "https://your-frontend.example.com"
+      - key: DATABASE_URL
+        # Set this to your Neon connection string (include sslmode=require)
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_AVATARS_BUCKET
+        value: "avatars"
+      - key: SUPABASE_POSTS_BUCKET
+        value: "posts"
+      - key: SUPABASE_SIGNED_URL_EXP_SECONDS
+        value: "3600"
