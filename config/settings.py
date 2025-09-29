@@ -36,6 +36,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_extensions",
+    "django.contrib.postgres",   # full-text search indexes and functions
+    "channels",                  # WebSockets
+    "drf_spectacular",           # OpenAPI
+    "django_filters",            # optional (filters in DRF)
 
     # 3rd-party
     "rest_framework",
@@ -45,6 +50,35 @@ INSTALLED_APPS = [
     "users",
     "posts",
 ]
+
+ASGI_APPLICATION = "config.asgi.application"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")]
+        },
+    }
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.OrderingFilter",
+        "rest_framework.filters.SearchFilter",
+    ],
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Social/Blogging API",
+    "DESCRIPTION": "Django REST API for social/blogging platform with JWT, Supabase Storage, Neon Postgres, Channels.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX_TRIM": True,
+    "CONTACT": {"name": "API Support", "email": "odonkorcedrickwabena@gmail.com"},
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -76,13 +110,35 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # --- Database (Neon Postgres) ---
-DATABASES = {
-    "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL", ""),
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
+# DATABASES = {
+#     "default": dj_database_url.parse(
+#         os.getenv("DATABASE_URL", ""),
+#         conn_max_age=600,
+#         ssl_require=True,
+#     )
+# }
+
+import sys
+
+db_config = dj_database_url.parse(
+    os.getenv("DATABASE_URL", ""),
+    conn_max_age=600,
+    ssl_require=True,
+)
+
+# --- Override for tests ---
+if "pytest" in sys.modules or "test" in sys.argv:
+    # Force SQLite for pytest runs
+    db_config = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "pytest.sqlite3",
+    }
+
+# --- Safety: If SQLite, drop OPTIONS (Postgres-only stuff like sslmode) ---
+if db_config.get("ENGINE") == "django.db.backends.sqlite3":
+    db_config.pop("OPTIONS", None)
+
+DATABASES = {"default": db_config}
 
 # --- Auth / DRF / JWT ---
 AUTH_USER_MODEL = "users.User"
@@ -136,3 +192,9 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_AVATARS_BUCKET = os.getenv("SUPABASE_AVATARS_BUCKET", "avatars")
 SUPABASE_POSTS_BUCKET = os.getenv("SUPABASE_POSTS_BUCKET", "posts")
 SUPABASE_SIGNED_URL_EXP_SECONDS = int(os.getenv("SUPABASE_SIGNED_URL_EXP_SECONDS", "3600"))
+
+REST_FRAMEWORK.update({
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.DefaultPagination",
+    "PAGE_SIZE": 20,
+})
+

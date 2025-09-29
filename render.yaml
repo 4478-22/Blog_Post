@@ -1,11 +1,13 @@
 services:
   - type: web
-    name: drf-social-backend
+    name: Blog website
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python manage.py migrate && gunicorn config.wsgi:application --log-file -"
+    startCommand: "python manage.py migrate && daphne -b 0.0.0.0 -p $PORT config.asgi:application"
     envVars:
+      - key: REDIS_URL
+        sync: red-d3cnhm37mgec73ambdkg
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_DEBUG

@@ -1,0 +1,89 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres -d testdb"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd="redis-cli ping || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # Django
+      DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_SECRET_KEY: test-secret
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      # DB (to CI Postgres service)
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testdb
+      # Redis (to CI Redis service)
+      REDIS_URL: redis://localhost:6379/0
+      # Supabase (dummy; code handles missing via try/except)
+      SUPABASE_URL: http://example.com
+      SUPABASE_SERVICE_ROLE_KEY: dummy
+      SUPABASE_AVATARS_BUCKET: avatars
+      SUPABASE_POSTS_BUCKET: posts
+      SUPABASE_SIGNED_URL_EXP_SECONDS: 3600
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Django checks & migrations
+        run: |
+          python manage.py check
+          python manage.py migrate --noinput
+
+      - name: Run tests
+        run: |
+          # If you use pytest, replace with: pytest -q
+          python manage.py test -v 2
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"

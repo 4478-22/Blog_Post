@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    container_name: drf_social_web
+    command: ["/entrypoint.sh", "daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]
+    env_file:
+      - .env
+    environment:
+      PORT: "8000"
+      DJANGO_DEBUG: "False"           # set True locally if you prefer
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      REDIS_URL: "redis://redis:6379/0"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: drf_social_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
