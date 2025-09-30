@@ -127,13 +127,15 @@ db_config = dj_database_url.parse(
 )
 
 # --- Override for tests ---
-if "pytest" in sys.modules or "test" in sys.argv:
-    # Force SQLite for pytest runs
+if (
+    "pytest" in sys.modules
+    or "test" in sys.argv
+    or os.getenv("GITHUB_ACTIONS") == "true"  # detect GitHub Actions
+):
     db_config = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "pytest.sqlite3",
     }
-
 # --- Safety: If SQLite, drop OPTIONS (Postgres-only stuff like sslmode) ---
 if db_config.get("ENGINE") == "django.db.backends.sqlite3":
     db_config.pop("OPTIONS", None)
