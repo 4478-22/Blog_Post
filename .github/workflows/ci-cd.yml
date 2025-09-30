@@ -75,9 +75,11 @@ jobs:
           python manage.py migrate --noinput
 
       - name: Run tests
-        run: |
-          # If you use pytest, replace with: pytest -q
-          python manage.py test -v 2
+        run: pytest --maxfail=1 --disable-warnings -q
+
+      - name: Collect static files
+        run: python manage.py collectstatic --noinput
+
 
   deploy:
     if: github.ref == 'refs/heads/main'
