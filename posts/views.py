@@ -102,14 +102,19 @@ class FeedView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        # If schema generator or anonymous user → return empty queryset
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Post.objects.none()
+
         user = self.request.user
-        # users that current user follows
         following_ids = user.following.values_list("id", flat=True)
+
         likes_prefetch = Prefetch(
             "likes",
             queryset=Like.objects.only("id", "user_id", "post_id"),
             to_attr="_prefetched_likes",
         )
+
         return (
             Post.objects.filter(author_id__in=following_ids)
             .select_related("author", "author__profile")
@@ -120,6 +125,7 @@ class FeedView(generics.ListAPIView):
             )
             .order_by("-created_at")
         )
+
 
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from rest_framework.permissions import AllowAny

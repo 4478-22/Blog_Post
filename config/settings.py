@@ -62,14 +62,14 @@ CHANNEL_LAYERS = {
     }
 }
 
-REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_FILTER_BACKENDS": [
-        "django_filters.rest_framework.DjangoFilterBackend",
-        "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
-    ],
-}
+# REST_FRAMEWORK = {
+#     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+#     "DEFAULT_FILTER_BACKENDS": [
+#         "django_filters.rest_framework.DjangoFilterBackend",
+#         "rest_framework.filters.OrderingFilter",
+#         "rest_framework.filters.SearchFilter",
+#     ],
+# }
 SPECTACULAR_SETTINGS = {
     "TITLE": "Social/Blogging API",
     "DESCRIPTION": "Django REST API for social/blogging platform with JWT, Supabase Storage, Neon Postgres, Channels.",
@@ -146,12 +146,20 @@ DATABASES = {"default": db_config}
 AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.OrderingFilter",
+        "rest_framework.filters.SearchFilter",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.DefaultPagination",
+    "PAGE_SIZE": 20,
 }
 
 SIMPLE_JWT = {
