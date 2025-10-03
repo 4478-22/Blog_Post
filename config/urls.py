@@ -18,7 +18,7 @@ router.register(r"comments", CommentViewSet, basename="comment")
 # Root landing view
 def api_root(request):
     return JsonResponse({
-        "message": "🚀 Welcome to the Social Blogging API",
+        "message": "Welcome to the Social Blogging API",
         "version": "1.0.0",
         "endpoints": {
             "auth_register": "/api/auth/register/",
@@ -27,7 +27,7 @@ def api_root(request):
             "users": "/api/users/",
             "posts": "/api/posts/",
             "comments": "/api/comments/",
-            "feed": "/api/feed/",
+            "feed": "/api/posts/feed/",
             "search_posts": "/api/posts/search/",
             "docs_swagger": "/api/docs/",
             "docs_redoc": "/api/redoc/",
@@ -49,7 +49,7 @@ urlpatterns = [
 
     # Core API
     path("api/", include(router.urls)),
-    path("api/feed/", FeedView.as_view(), name="feed"),
+    path("api/posts/feed/", FeedView.as_view(), name="feed"), 
     path("api/posts/search/", PostSearchView.as_view(), name="post-search"),
 
     # API Schema & Docs
